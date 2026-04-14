@@ -1,0 +1,434 @@
+/* ===== PÁDEL RESERVAS - Custom Styles ===== */
+
+:root {
+  --primary: #1a6b3a;
+  --primary-dark: #114d29;
+  --primary-light: #2a9c55;
+  --accent: #f5a623;
+  --bg-dark: #0f1b14;
+  --bg-card: #ffffff;
+  --text-muted: #6c757d;
+  --border-radius: 12px;
+  --shadow: 0 4px 20px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.18);
+}
+
+/* ===== BASE ===== */
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: #f0f5f2;
+  color: #212529;
+}
+
+/* ===== NAVBAR ===== */
+.navbar-brand {
+  font-weight: 700;
+  font-size: 1.3rem;
+  letter-spacing: -0.5px;
+}
+
+.navbar-brand span {
+  color: var(--accent);
+}
+
+.navbar {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+}
+
+/* ===== AUTH PAGES ===== */
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-dark) 0%, var(--primary-dark) 50%, var(--primary) 100%);
+  padding: 2rem 1rem;
+}
+
+.auth-card {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 440px;
+  padding: 2.5rem 2.2rem;
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-logo .logo-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.auth-logo h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin: 0;
+}
+
+.auth-logo p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0;
+}
+
+/* ===== FORM CONTROLS ===== */
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1.5px solid #dee2e6;
+  padding: 0.6rem 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,107,58,0.12);
+}
+
+.form-label {
+  font-weight: 500;
+  font-size: 0.88rem;
+  color: #495057;
+  margin-bottom: 0.3rem;
+}
+
+/* ===== BUTTONS ===== */
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-outline-primary {
+  color: var(--primary);
+  border-color: var(--primary);
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-danger {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.btn-warning {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.btn-success {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* ===== CARDS ===== */
+.card {
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
+.card-header {
+  border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+  font-weight: 600;
+}
+
+/* ===== DASHBOARD ===== */
+.sidebar {
+  min-height: calc(100vh - 56px);
+  background: white;
+  border-right: 1px solid #e9ecef;
+  padding-top: 1.5rem;
+}
+
+.sidebar .nav-link {
+  color: #495057;
+  border-radius: 8px;
+  margin: 2px 8px;
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 500;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.sidebar .nav-link:hover {
+  background-color: #f0f5f2;
+  color: var(--primary);
+}
+
+.sidebar .nav-link.active {
+  background-color: #e0f0e8;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.sidebar .nav-link i {
+  width: 20px;
+  text-align: center;
+}
+
+.main-content {
+  padding: 2rem;
+}
+
+/* ===== STATS CARDS ===== */
+.stat-card {
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card .stat-icon {
+  font-size: 2.5rem;
+  opacity: 0.25;
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.stat-card h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.stat-card p {
+  margin: 0.25rem 0 0;
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+
+.stat-green { background: linear-gradient(135deg, var(--primary), var(--primary-light)); }
+.stat-blue  { background: linear-gradient(135deg, #0d6efd, #5ea6fa); }
+.stat-orange{ background: linear-gradient(135deg, #fd7e14, #ffc107); }
+.stat-red   { background: linear-gradient(135deg, #dc3545, #ff7b8a); }
+
+/* ===== TABLES ===== */
+.table {
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.table thead th {
+  background-color: #f8fafa;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 2px solid #e9ecef;
+}
+
+/* ===== BADGES ===== */
+.badge-activa {
+  background-color: #d1f5e0;
+  color: #155724;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-cancelada {
+  background-color: #f8d7da;
+  color: #721c24;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ===== COURT CARDS ===== */
+.court-card {
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.court-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.court-card .court-img {
+  height: 140px;
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.5rem;
+}
+
+/* ===== AVAILABILITY SLOTS ===== */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.slot {
+  padding: 0.5rem;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s;
+  border: 2px solid transparent;
+}
+
+.slot-available {
+  background-color: #e0f0e8;
+  color: var(--primary-dark);
+  border-color: #b0ddc0;
+}
+
+.slot-available:hover {
+  background-color: var(--primary);
+  color: white;
+  transform: scale(1.03);
+}
+
+.slot-selected {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary-dark);
+}
+
+/* ===== MODALS ===== */
+.modal-content {
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+}
+
+/* ===== ALERTS ===== */
+.alert {
+  border-radius: 8px;
+  border: none;
+  font-size: 0.9rem;
+}
+
+/* ===== LOADING ===== */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--text-muted);
+}
+
+/* ===== PAGE HEADER ===== */
+.page-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.page-header h2 {
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin: 0;
+}
+
+.page-header p {
+  color: var(--text-muted);
+  margin: 0.25rem 0 0;
+}
+
+/* ===== SECTION DIVIDER ===== */
+.section { display: none; }
+.section.active { display: block; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-muted);
+}
+
+.empty-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.4;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .sidebar {
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0.5rem 0;
+  }
+
+  .sidebar .nav-link {
+    display: inline-flex;
+    margin: 2px 4px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .auth-card {
+    padding: 1.8rem 1.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .slot-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  }
+}

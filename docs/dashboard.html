@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pádel Reservas — Mi Panel</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar navbar-expand-md navbar-dark" style="background:var(--primary-dark);">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#"> Pádel <span>Reservas</span></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto align-items-md-center gap-2">
+        <li class="nav-item">
+          <span class="nav-link text-white-50" id="navUserName">
+            <i class="bi bi-person-circle me-1"></i><span id="navName">Usuario</span>
+          </span>
+        </li>
+        <li class="nav-item">
+          <button class="btn btn-outline-light btn-sm" id="logoutBtn">
+            <i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== LAYOUT ===== -->
+<div class="container-fluid g-0">
+  <div class="row g-0">
+
+    <!-- SIDEBAR -->
+    <div class="col-md-2 col-lg-2 sidebar d-flex flex-column" id="sidebar">
+      <nav class="nav flex-column pt-2">
+        <a class="nav-link active" href="#" data-section="inicio">
+          <i class="bi bi-house"></i> Inicio
+        </a>
+        <a class="nav-link" href="#" data-section="pistas">
+          <i class="bi bi-grid"></i> Pistas
+        </a>
+        <a class="nav-link" href="#" data-section="disponibilidad">
+          <i class="bi bi-calendar3"></i> Disponibilidad
+        </a>
+        <a class="nav-link" href="#" data-section="reservas">
+          <i class="bi bi-bookmark"></i> Mis reservas
+        </a>
+        <a class="nav-link" href="#" data-section="perfil">
+          <i class="bi bi-person"></i> Mi perfil
+        </a>
+        <hr class="mx-3" />
+        <a class="nav-link text-danger" href="#" id="sidebarLogout">
+          <i class="bi bi-box-arrow-right"></i> Salir
+        </a>
+      </nav>
+    </div>
+
+    <!-- MAIN -->
+    <div class="col-md-10 col-lg-10 main-content">
+
+      <!-- ===== INICIO ===== -->
+      <div class="section active" id="sec-inicio">
+        <div class="page-header">
+          <h2>Bienvenido/a, <span id="welcomeName">–</span></h2>
+          <p>Reserva tu pista de pádel en segundos</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-lg-3">
+            <div class="stat-card stat-green">
+              <h3 id="statTotal">–</h3>
+              <p>Reservas totales</p>
+              <i class="bi bi-bookmark-fill stat-icon"></i>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="stat-card stat-blue">
+              <h3 id="statActivas">–</h3>
+              <p>Reservas activas</p>
+              <i class="bi bi-check-circle-fill stat-icon"></i>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="stat-card stat-orange">
+              <h3 id="statPistas">–</h3>
+              <p>Pistas disponibles</p>
+              <i class="bi bi-grid-fill stat-icon"></i>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="stat-card stat-red">
+              <h3 id="statCanceladas">–</h3>
+              <p>Canceladas</p>
+              <i class="bi bi-x-circle-fill stat-icon"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acceso rápido -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-body text-center py-4">
+                <div style="font-size:2.5rem; margin-bottom:.75rem;">📅</div>
+                <h5 class="card-title fw-bold">Nueva reserva</h5>
+                <p class="card-text text-muted small">Consulta disponibilidad y reserva tu pista ahora</p>
+                <button class="btn btn-primary" onclick="navigateTo('disponibilidad')">
+                  <i class="bi bi-plus-circle me-2"></i>Reservar pista
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-body text-center py-4">
+                <div style="font-size:2.5rem; margin-bottom:.75rem;">🏓</div>
+                <h5 class="card-title fw-bold">Ver pistas</h5>
+                <p class="card-text text-muted small">Explora todas las pistas disponibles y sus precios</p>
+                <button class="btn btn-outline-primary" onclick="navigateTo('pistas')">
+                  <i class="bi bi-grid me-2"></i>Ver pistas
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PISTAS ===== -->
+      <div class="section" id="sec-pistas">
+        <div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <h2>Pistas de pádel</h2>
+            <p>Todas las pistas disponibles</p>
+          </div>
+        </div>
+        <div id="courtsGrid" class="row g-3">
+          <div class="loading-spinner col-12">
+            <div class="spinner-border text-success me-2"></div> Cargando pistas...
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== DISPONIBILIDAD ===== -->
+      <div class="section" id="sec-disponibilidad">
+        <div class="page-header">
+          <h2>Disponibilidad y Reserva</h2>
+          <p>Consulta los huecos libres y crea tu reserva</p>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="row g-3 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label">Fecha</label>
+                <input type="date" class="form-control" id="availDate" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Pista</label>
+                <select class="form-select" id="availCourt">
+                  <option value="">Todas las pistas</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-primary w-100" id="checkAvailBtn">
+                  <i class="bi bi-search me-2"></i>Ver disponibilidad
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="availabilityResult"></div>
+      </div>
+
+      <!-- ===== MIS RESERVAS ===== -->
+      <div class="section" id="sec-reservas">
+        <div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <h2>Mis reservas</h2>
+            <p>Gestiona tus reservas activas y pasadas</p>
+          </div>
+          <div class="d-flex gap-2 align-items-end flex-wrap">
+            <input type="date" class="form-control form-control-sm" id="resFrom" style="width:auto;" />
+            <input type="date" class="form-control form-control-sm" id="resTo" style="width:auto;" />
+            <button class="btn btn-outline-primary btn-sm" id="filterResBtn">
+              <i class="bi bi-funnel me-1"></i>Filtrar
+            </button>
+          </div>
+        </div>
+        <div id="reservationsTable">
+          <div class="loading-spinner">
+            <div class="spinner-border text-success me-2"></div> Cargando reservas...
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PERFIL ===== -->
+      <div class="section" id="sec-perfil">
+        <div class="page-header">
+          <h2>Mi perfil</h2>
+          <p>Consulta y actualiza tus datos personales</p>
+        </div>
+
+        <div class="row justify-content-center">
+          <div class="col-md-7 col-lg-6">
+            <div class="card">
+              <div class="card-header bg-white py-3">
+                <h5 class="mb-0"><i class="bi bi-person-circle me-2 text-success"></i>Datos personales</h5>
+              </div>
+              <div class="card-body p-4">
+                <div id="profileAlert"></div>
+                <form id="profileForm" novalidate>
+                  <div class="row g-3 mb-3">
+                    <div class="col-6">
+                      <label class="form-label">Nombre</label>
+                      <input type="text" class="form-control" id="profNombre" />
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label">Apellidos</label>
+                      <input type="text" class="form-control" id="profApellidos" />
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Correo electrónico</label>
+                    <input type="email" class="form-control" id="profEmail" readonly style="background:#f8f9fa;" />
+                    <div class="form-text">El correo no se puede modificar</div>
+                  </div>
+                  <div class="mb-4">
+                    <label class="form-label">Teléfono</label>
+                    <input type="tel" class="form-control" id="profTelefono" />
+                  </div>
+                  <button type="submit" class="btn btn-primary" id="saveProfileBtn">
+                    <i class="bi bi-floppy me-2"></i>Guardar cambios
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main-content -->
+  </div><!-- /row -->
+</div><!-- /container-fluid -->
+
+<!-- ===== MODAL: CREAR RESERVA ===== -->
+<div class="modal fade" id="createReservationModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2 text-success"></i>Nueva reserva</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="createResAlert"></div>
+        <form id="createResForm" novalidate>
+          <div class="mb-3">
+            <label class="form-label">Pista</label>
+            <input type="text" class="form-control" id="resCourtName" readonly style="background:#f8f9fa;" />
+            <input type="hidden" id="resCourtId" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Fecha</label>
+            <input type="date" class="form-control" id="resDate" readonly style="background:#f8f9fa;" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Hora de inicio</label>
+            <input type="time" class="form-control" id="resStartTime" readonly style="background:#f8f9fa;" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Duración</label>
+            <select class="form-select" id="resDuration">
+              <option value="60">60 minutos (1h)</option>
+              <option value="90">90 minutos (1h 30min)</option>
+              <option value="120">120 minutos (2h)</option>
+            </select>
+          </div>
+          <div id="resPriceInfo" class="alert alert-info py-2" style="display:none;"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="confirmReservationBtn">
+          <i class="bi bi-check-lg me-2"></i>Confirmar reserva
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: EDITAR RESERVA ===== -->
+<div class="modal fade" id="editReservationModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil me-2 text-warning"></i>Editar reserva</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="editResAlert"></div>
+        <form id="editResForm" novalidate>
+          <input type="hidden" id="editResId" />
+          <div class="mb-3">
+            <label class="form-label">Nueva fecha</label>
+            <input type="date" class="form-control" id="editResDate" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nueva hora de inicio</label>
+            <input type="time" class="form-control" id="editResTime" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Duración (minutos)</label>
+            <select class="form-select" id="editResDuration">
+              <option value="60">60 min</option>
+              <option value="90">90 min</option>
+              <option value="120">120 min</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-warning" id="saveEditBtn">
+          <i class="bi bi-floppy me-2"></i>Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const demoUser = {
+    nombre: 'Usuario Demo',
+    apellidos: 'Frontend',
+    email: 'demo@padel.local',
+    telefono: '600 000 000'
+  };
+
+  document.getElementById('navName').textContent = demoUser.nombre;
+  document.getElementById('welcomeName').textContent = demoUser.nombre;
+  document.getElementById('profNombre').value = demoUser.nombre;
+  document.getElementById('profApellidos').value = demoUser.apellidos;
+  document.getElementById('profEmail').value = demoUser.email;
+  document.getElementById('profTelefono').value = demoUser.telefono;
+
+  function showInline(targetId, message, type) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    target.innerHTML = `<div class="alert alert-${type || 'info'} py-2" role="alert">${message}</div>`;
+  }
+
+  function navigateTo(sectionName) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+    document.getElementById('sec-' + sectionName).classList.add('active');
+    document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+    onSectionEnter(sectionName);
+  }
+
+  document.querySelectorAll('[data-section]').forEach(link => {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      navigateTo(this.dataset.section);
+    });
+  });
+
+  function onSectionEnter(name) {
+    if (name === 'inicio')         loadStats();
+    if (name === 'pistas')         loadCourts();
+    if (name === 'reservas')       loadReservations();
+    if (name === 'disponibilidad') initAvailability();
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', function () {
+    alert('Modo demo visual: sin autenticación ni cierre de sesión real.');
+  });
+  document.getElementById('sidebarLogout').addEventListener('click', function (e) {
+    e.preventDefault();
+    alert('Modo demo visual: sin autenticación ni cierre de sesión real.');
+  });
+
+  function loadStats() {
+    document.getElementById('statTotal').textContent = '6';
+    document.getElementById('statActivas').textContent = '3';
+    document.getElementById('statPistas').textContent = '4';
+    document.getElementById('statCanceladas').textContent = '1';
+  }
+  loadStats();
+
+  function loadCourts() {
+    const grid = document.getElementById('courtsGrid');
+    grid.innerHTML = `
+      <div class="col-sm-6 col-lg-4">
+        <div class="card court-card" onclick="goReserveCourt(1, 'Pista Central')">
+          <div class="court-img">🏓</div>
+          <div class="card-body">
+            <h5 class="card-title fw-bold mb-1">Pista Central</h5>
+            <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>Pabellon A</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-semibold text-success">18 EUR/h</span>
+              <span class="badge bg-success">Demo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="card court-card" onclick="goReserveCourt(2, 'Pista Norte')">
+          <div class="court-img">🏓</div>
+          <div class="card-body">
+            <h5 class="card-title fw-bold mb-1">Pista Norte</h5>
+            <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>Pabellon B</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-semibold text-success">16 EUR/h</span>
+              <span class="badge bg-success">Demo</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function goReserveCourt(courtId) {
+    navigateTo('disponibilidad');
+    document.getElementById('availDate').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('availCourt').value = String(courtId);
+    document.getElementById('checkAvailBtn').click();
+  }
+
+  function initAvailability() {
+    const sel = document.getElementById('availCourt');
+    if (sel.options.length <= 1) {
+      sel.innerHTML += '<option value="1">Pista Central</option><option value="2">Pista Norte</option>';
+    }
+    if (!document.getElementById('availDate').value) {
+      document.getElementById('availDate').value = new Date().toISOString().slice(0, 10);
+    }
+  }
+
+  document.getElementById('checkAvailBtn').addEventListener('click', function () {
+    const date    = document.getElementById('availDate').value;
+    const result  = document.getElementById('availabilityResult');
+
+    if (!date) {
+      result.innerHTML = '<div class="alert alert-warning">Selecciona una fecha.</div>';
+      return;
+    }
+
+    result.innerHTML = `
+      <div class="card mb-3">
+        <div class="card-header bg-white"><strong><i class="bi bi-geo me-2 text-success"></i>Pista Central</strong></div>
+        <div class="card-body">
+          <p class="text-muted small mb-2">Modo demo visual: horarios de ejemplo</p>
+          <div class="slot-grid">
+            <div class="slot slot-available" onclick="openCreateReservation(1, 'Pista Central', '${date}', '18:00')"><i class="bi bi-clock me-1"></i>18:00</div>
+            <div class="slot slot-available" onclick="openCreateReservation(1, 'Pista Central', '${date}', '19:00')"><i class="bi bi-clock me-1"></i>19:00</div>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  function openCreateReservation(courtId, courtName, date, startTime) {
+    document.getElementById('resCourtId').value    = courtId;
+    document.getElementById('resCourtName').value  = courtName;
+    document.getElementById('resDate').value        = date;
+    document.getElementById('resStartTime').value   = startTime.substring(0, 5);
+    document.getElementById('createResAlert').innerHTML = '';
+    new bootstrap.Modal(document.getElementById('createReservationModal')).show();
+  }
+
+  document.getElementById('confirmReservationBtn').addEventListener('click', function () {
+    showInline('createResAlert', 'Modo demo visual: reserva no conectada al backend.', 'info');
+  });
+
+  function loadReservations() {
+    const container = document.getElementById('reservationsTable');
+    container.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Pista</th>
+                <th>Fecha</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-muted small">101</td>
+                <td><strong>Pista Central</strong></td>
+                <td>14/04/2026</td>
+                <td>18:00</td>
+                <td>19:00</td>
+                <td><span class="badge-activa">ACTIVA</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline-warning me-1" onclick="openEditReservation(101, '2026-04-14', '18:00', 60)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-sm btn-outline-danger" onclick="cancelRes()"><i class="bi bi-x-lg"></i></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>`;
+  }
+
+  document.getElementById('filterResBtn').addEventListener('click', function () {
+    showInline('reservationsTable', '<strong>Filtro aplicado en modo demo.</strong> Los datos son estaticos.', 'info');
+    setTimeout(loadReservations, 600);
+  });
+
+  function cancelRes() {
+    alert('Modo demo visual: cancelar reserva no esta conectado al backend.');
+  }
+
+  function openEditReservation(id, date, startTime, duration) {
+    document.getElementById('editResId').value       = id;
+    document.getElementById('editResDate').value      = date;
+    document.getElementById('editResTime').value      = startTime.substring(0, 5);
+    document.getElementById('editResDuration').value  = duration;
+    document.getElementById('editResAlert').innerHTML = '';
+    new bootstrap.Modal(document.getElementById('editReservationModal')).show();
+  }
+
+  document.getElementById('saveEditBtn').addEventListener('click', function () {
+    showInline('editResAlert', 'Modo demo visual: edicion no conectada al backend.', 'info');
+  });
+
+  document.getElementById('profileForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    showInline('profileAlert', 'Modo demo visual: cambios de perfil no persistentes.', 'info');
+  });
+
+  loadCourts();
+  loadReservations();
+  onSectionEnter('inicio');
+</script>
+</body>
+</html>

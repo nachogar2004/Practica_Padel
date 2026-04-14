@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pádel Reservas — Panel Admin</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar navbar-expand-md navbar-dark" style="background:#114d29;">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#"> Pádel <span>Reservas</span> <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">ADMIN</span></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto align-items-md-center gap-2">
+        <li class="nav-item">
+          <span class="nav-link text-white-50">
+            <i class="bi bi-shield-check me-1"></i><span id="navName">Admin</span>
+          </span>
+        </li>
+        <li class="nav-item">
+          <button class="btn btn-outline-light btn-sm" id="logoutBtn">
+            <i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== LAYOUT ===== -->
+<div class="container-fluid g-0">
+  <div class="row g-0">
+
+    <!-- SIDEBAR -->
+    <div class="col-md-2 sidebar d-flex flex-column">
+      <nav class="nav flex-column pt-2">
+        <a class="nav-link active" href="#" data-section="resumen">
+          <i class="bi bi-speedometer2"></i> Resumen
+        </a>
+        <a class="nav-link" href="#" data-section="reservas">
+          <i class="bi bi-bookmark"></i> Reservas
+        </a>
+        <a class="nav-link" href="#" data-section="pistas">
+          <i class="bi bi-grid"></i> Pistas
+        </a>
+        <a class="nav-link" href="#" data-section="usuarios">
+          <i class="bi bi-people"></i> Usuarios
+        </a>
+        <hr class="mx-3" />
+        <a class="nav-link text-danger" href="#" id="sidebarLogout">
+          <i class="bi bi-box-arrow-right"></i> Salir
+        </a>
+      </nav>
+    </div>
+
+    <!-- MAIN -->
+    <div class="col-md-10 main-content">
+
+      <!-- ===== RESUMEN ===== -->
+      <div class="section active" id="sec-resumen">
+        <div class="page-header">
+          <h2>Panel de administración</h2>
+          <p>Estadísticas globales del sistema</p>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-lg-3">
+            <div class="stat-card stat-green">
+              <h3 id="statTotalRes">–</h3>
+              <p>Total reservas</p>
+              <i class="bi bi-bookmark-fill stat-icon"></i>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="stat-card stat-blue">
+              <h3 id="statActivasRes">–</h3>
+              <p>Reservas activas</p>
+              <i class="bi bi-check-circle-fill stat-icon"></i>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="stat-card stat-orange">
+              <h3 id="statTotalPistas">–</h3>
+              <p>Pistas totales</p>
+              <i class="bi bi-grid-fill stat-icon"></i>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="stat-card stat-red">
+              <h3 id="statTotalUsers">–</h3>
+              <p>Usuarios registrados</p>
+              <i class="bi bi-people-fill stat-icon"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="card text-center p-3">
+              <div style="font-size:2rem;margin-bottom:.5rem;">📋</div>
+              <h6 class="fw-bold">Ver todas las reservas</h6>
+              <button class="btn btn-sm btn-outline-primary mt-2" onclick="navigateTo('reservas')">Ver reservas</button>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card text-center p-3">
+              <div style="font-size:2rem;margin-bottom:.5rem;">➕</div>
+              <h6 class="fw-bold">Nueva pista</h6>
+              <button class="btn btn-sm btn-primary mt-2" onclick="navigateTo('pistas'); setTimeout(openCreateCourtModal, 300)">Crear pista</button>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card text-center p-3">
+              <div style="font-size:2rem;margin-bottom:.5rem;">👥</div>
+              <h6 class="fw-bold">Gestionar usuarios</h6>
+              <button class="btn btn-sm btn-outline-secondary mt-2" onclick="navigateTo('usuarios')">Ver usuarios</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== RESERVAS ADMIN ===== -->
+      <div class="section" id="sec-reservas">
+        <div class="page-header">
+          <h2>Todas las reservas</h2>
+          <p>Gestión global de reservas</p>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Fecha</label>
+                <input type="date" class="form-control form-control-sm" id="adminResDate" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Pista</label>
+                <select class="form-select form-select-sm" id="adminResCourt">
+                  <option value="">Todas</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Usuario ID</label>
+                <input type="number" class="form-control form-control-sm" id="adminResUser" placeholder="ID usuario" />
+              </div>
+              <div class="col-md-3">
+                <button class="btn btn-primary btn-sm w-100" id="adminResFilterBtn">
+                  <i class="bi bi-funnel me-1"></i>Filtrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="adminResTable">
+          <div class="loading-spinner"><div class="spinner-border text-success me-2"></div> Cargando...</div>
+        </div>
+      </div>
+
+      <!-- ===== PISTAS ADMIN ===== -->
+      <div class="section" id="sec-pistas">
+        <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h2>Gestión de pistas</h2>
+            <p>Crear, editar y desactivar pistas</p>
+          </div>
+          <button class="btn btn-primary" onclick="openCreateCourtModal()">
+            <i class="bi bi-plus-lg me-2"></i>Nueva pista
+          </button>
+        </div>
+        <div id="adminCourtsTable">
+          <div class="loading-spinner"><div class="spinner-border text-success me-2"></div> Cargando...</div>
+        </div>
+      </div>
+
+      <!-- ===== USUARIOS ADMIN ===== -->
+      <div class="section" id="sec-usuarios">
+        <div class="page-header">
+          <h2>Usuarios registrados</h2>
+          <p>Listado de todos los usuarios del sistema</p>
+        </div>
+        <div id="adminUsersTable">
+          <div class="loading-spinner"><div class="spinner-border text-success me-2"></div> Cargando...</div>
+        </div>
+      </div>
+
+    </div><!-- /main-content -->
+  </div><!-- /row -->
+</div><!-- /container-fluid -->
+
+<!-- ===== MODAL: CREAR/EDITAR PISTA ===== -->
+<div class="modal fade" id="courtModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="courtModalTitle"><i class="bi bi-grid me-2 text-success"></i>Nueva pista</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="courtModalAlert"></div>
+        <form id="courtForm" novalidate>
+          <input type="hidden" id="courtId" />
+          <div class="mb-3">
+            <label class="form-label">Nombre de la pista</label>
+            <input type="text" class="form-control" id="courtNombre" placeholder="Pista 1" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Ubicación</label>
+            <input type="text" class="form-control" id="courtUbicacion" placeholder="Pabellón A, planta baja" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Precio por hora (€)</label>
+            <div class="input-group">
+              <span class="input-group-text">€</span>
+              <input type="number" class="form-control" id="courtPrecio" step="0.5" min="0" placeholder="15.00" />
+            </div>
+          </div>
+          <div class="form-check form-switch mb-3" id="courtActivaRow" style="display:none;">
+            <input class="form-check-input" type="checkbox" id="courtActiva" checked />
+            <label class="form-check-label" for="courtActiva">Pista activa</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="saveCourtBtn">
+          <i class="bi bi-floppy me-2"></i>Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.getElementById('navName').textContent = 'Admin Demo';
+
+  function showDemo(message) {
+    alert(message || 'Modo demo visual: accion sin backend.');
+  }
+
+  // ===== NAVEGACIÓN =====
+  function navigateTo(sectionName) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+    document.getElementById('sec-' + sectionName).classList.add('active');
+    document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+    onSectionEnter(sectionName);
+  }
+
+  document.querySelectorAll('[data-section]').forEach(link => {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      navigateTo(this.dataset.section);
+    });
+  });
+
+  function onSectionEnter(name) {
+    if (name === 'resumen')  loadResumen();
+    if (name === 'reservas') { initAdminResFilter(); loadAdminReservations(); }
+    if (name === 'pistas')   loadAdminCourts();
+    if (name === 'usuarios') loadAdminUsers();
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', function () { showDemo('Modo demo visual: no hay logout real.'); });
+  document.getElementById('sidebarLogout').addEventListener('click', function (e) { e.preventDefault(); showDemo('Modo demo visual: no hay logout real.'); });
+
+  // ===== RESUMEN =====
+  function loadResumen() {
+    document.getElementById('statTotalRes').textContent = '18';
+    document.getElementById('statActivasRes').textContent = '9';
+    document.getElementById('statTotalPistas').textContent = '6';
+    document.getElementById('statTotalUsers').textContent = '24';
+  }
+  loadResumen();
+
+  // ===== RESERVAS ADMIN =====
+  function initAdminResFilter() {
+    const sel = document.getElementById('adminResCourt');
+    if (sel.options.length <= 1) {
+      sel.innerHTML += '<option value="1">Pista Central</option><option value="2">Pista Norte</option>';
+    }
+  }
+
+  function loadAdminReservations() {
+    const container = document.getElementById('adminResTable');
+    container.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Usuario</th>
+                <th>Pista</th>
+                <th>Fecha</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Duración</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-muted small">501</td>
+                <td>Usuario Demo</td>
+                <td><strong>Pista Central</strong></td>
+                <td>14/04/2026</td>
+                <td>18:00</td>
+                <td>19:00</td>
+                <td>60 min</td>
+                <td><span class="badge-activa">ACTIVA</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>`;
+  }
+
+  document.getElementById('adminResFilterBtn').addEventListener('click', function () {
+    showDemo('Modo demo visual: filtro sin backend.');
+    loadAdminReservations();
+  });
+
+  // ===== PISTAS ADMIN =====
+  function loadAdminCourts() {
+    const container = document.getElementById('adminCourtsTable');
+    container.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Ubicación</th>
+                <th>Precio/h</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-muted small">1</td>
+                <td><strong>Pista Central</strong></td>
+                <td>Pabellon A</td>
+                <td>18 EUR</td>
+                <td><span class="badge bg-success">Activa</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline-warning me-1" onclick="openEditCourtModal(1, 'Pista Central', 'Pabellon A', 18, true)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-sm btn-outline-danger" onclick="deleteCourt()"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>`;
+  }
+
+  // Crear pista
+  function openCreateCourtModal() {
+    document.getElementById('courtModalTitle').innerHTML = '<i class="bi bi-plus-lg me-2 text-success"></i>Nueva pista';
+    document.getElementById('courtId').value      = '';
+    document.getElementById('courtNombre').value  = '';
+    document.getElementById('courtUbicacion').value = '';
+    document.getElementById('courtPrecio').value  = '';
+    document.getElementById('courtModalAlert').innerHTML = '';
+    document.getElementById('courtActivaRow').style.display = 'none';
+    new bootstrap.Modal(document.getElementById('courtModal')).show();
+  }
+
+  // Editar pista
+  function openEditCourtModal(id, nombre, ubicacion, precio, activa) {
+    document.getElementById('courtModalTitle').innerHTML = '<i class="bi bi-pencil me-2 text-warning"></i>Editar pista';
+    document.getElementById('courtId').value       = id;
+    document.getElementById('courtNombre').value   = nombre;
+    document.getElementById('courtUbicacion').value = ubicacion;
+    document.getElementById('courtPrecio').value   = precio ?? '';
+    document.getElementById('courtActiva').checked = activa;
+    document.getElementById('courtModalAlert').innerHTML = '';
+    document.getElementById('courtActivaRow').style.display = 'block';
+    new bootstrap.Modal(document.getElementById('courtModal')).show();
+  }
+
+  document.getElementById('saveCourtBtn').addEventListener('click', function () {
+    document.getElementById('courtModalAlert').innerHTML = '<div class="alert alert-info py-2">Modo demo visual: no se guardan cambios reales.</div>';
+  });
+
+  function deleteCourt() {
+    showDemo('Modo demo visual: eliminar/desactivar pista sin backend.');
+  }
+
+  // ===== USUARIOS ADMIN =====
+  function loadAdminUsers() {
+    const container = document.getElementById('adminUsersTable');
+    container.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Rol</th>
+                <th>Fecha registro</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-muted small">10</td>
+                <td><strong>Usuario Demo</strong></td>
+                <td>demo@padel.local</td>
+                <td>600 000 000</td>
+                <td><span class="badge bg-primary">USER</span></td>
+                <td class="small text-muted">14/04/2026</td>
+                <td><span class="badge bg-success">Activo</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>`;
+  }
+
+  // Carga sección inicial
+  onSectionEnter('resumen');
+</script>
+</body>
+</html>
