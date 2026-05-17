@@ -15,6 +15,8 @@ Para comprobar las funcionalidades de usuario y administrador, podéis usar esta
 - Usuario: `usuario@demo` | Contraseña: `usuario123!`
 - Administrador: `admin@pdemo` | Contraseña: `admin123!`
 
+Pagina web: http://localhost:8080/index.html
+
 ## Entrega
 
 - Descargar memoria (PDF): [Memoria_Final_ReservasPadel.pdf](docs/entrega/Memoria_Final_ReservasPadel.pdf)
