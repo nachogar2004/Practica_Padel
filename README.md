@@ -21,3 +21,4 @@ Pagina web: http://localhost:8080/index.html
 
 - Descargar memoria (PDF): [Memoria_Final_ReservasPadel.pdf](docs/entrega/Memoria_Final_ReservasPadel.pdf)
 
+*El código esta muy comentado porque lo utilicé para estudiar el examen*
