@@ -341,24 +341,31 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/api-client.js"></script>
 <script>
-  const auth = AppApi.requireRole('USER');
-  if (!auth.ok) {
-    window.location.href = auth.redirect;
+  (function () {
+  const _s = AppApi.getSession();
+  if (!_s) { window.location.href = 'index.html'; return; }
+  if (_s.rol === 'ADMIN') { window.location.href = 'admin.html'; return; }
+  const auth = { user: _s };
+
+  document.getElementById('navName').textContent      = auth.user.nombre;
+  document.getElementById('welcomeName').textContent  = auth.user.nombre;
+
+  let currentUserId = null;
+
+  async function loadProfile() {
+    try {
+      const resp = await fetch(AppApi.config.baseUrl + '/auth/me', { credentials: 'include' });
+      if (!resp.ok) throw new Error(resp.status);
+      const user = await resp.json();
+      currentUserId = user.idUsuario;
+      document.getElementById('profNombre').value    = user.nombre    || '';
+      document.getElementById('profApellidos').value = user.apellidos || '';
+      document.getElementById('profEmail').value     = user.email     || '';
+      document.getElementById('profTelefono').value  = user.telefono  || '';
+    } catch (_) {
+      showInline('profileAlert', 'No se pudo cargar el perfil.', 'danger');
+    }
   }
-
-  const demoUser = {
-    nombre: auth.user.nombre,
-    apellidos: 'Frontend',
-    email: auth.user.email,
-    telefono: '600 000 000'
-  };
-
-  document.getElementById('navName').textContent = demoUser.nombre;
-  document.getElementById('welcomeName').textContent = demoUser.nombre;
-  document.getElementById('profNombre').value = demoUser.nombre;
-  document.getElementById('profApellidos').value = demoUser.apellidos;
-  document.getElementById('profEmail').value = demoUser.email;
-  document.getElementById('profTelefono').value = demoUser.telefono;
 
   function showInline(targetId, message, type) {
     const target = document.getElementById(targetId);
@@ -366,7 +373,7 @@
     target.innerHTML = `<div class="alert alert-${type || 'info'} py-2" role="alert">${message}</div>`;
   }
 
-  function navigateTo(sectionName) {
+  window.navigateTo = function navigateTo(sectionName) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
     document.getElementById('sec-' + sectionName).classList.add('active');
@@ -386,97 +393,191 @@
     if (name === 'pistas')         loadCourts();
     if (name === 'reservas')       loadReservations();
     if (name === 'disponibilidad') initAvailability();
+    if (name === 'perfil')         loadProfile();
   }
 
   document.getElementById('logoutBtn').addEventListener('click', function () {
-    AppApi.logout();
-    window.location.href = 'index.html';
+    AppApi.logout().finally(() => {
+      window.location.href = 'index.html?forceLogin=1';
+    });
   });
   document.getElementById('sidebarLogout').addEventListener('click', function (e) {
     e.preventDefault();
-    AppApi.logout();
-    window.location.href = 'index.html';
+    AppApi.logout().finally(() => {
+      window.location.href = 'index.html?forceLogin=1';
+    });
   });
 
-  function loadStats() {
-    document.getElementById('statTotal').textContent = '6';
-    document.getElementById('statActivas').textContent = '3';
-    document.getElementById('statPistas').textContent = '4';
-    document.getElementById('statCanceladas').textContent = '1';
+  async function loadStats() {
+    ['statTotal', 'statActivas', 'statPistas', 'statCanceladas'].forEach(id => {
+      document.getElementById(id).textContent = '…';
+    });
+    try {
+      const [resResp, courtsResp] = await Promise.all([
+        fetch(AppApi.config.baseUrl + '/reservations', { credentials: 'include' }),
+        fetch(AppApi.config.baseUrl + '/courts?active=true', { credentials: 'include' })
+      ]);
+      console.log('[loadStats] reservations status:', resResp.status);
+      console.log('[loadStats] courts status:', courtsResp.status);
+
+      if (!resResp.ok || !courtsResp.ok) {
+        ['statTotal', 'statActivas', 'statPistas', 'statCanceladas'].forEach(id => {
+          document.getElementById(id).textContent = '–';
+        });
+        return;
+      }
+
+      const reservations = await resResp.json();
+      const courts       = await courtsResp.json();
+      console.log('[loadStats] reservations:', reservations);
+      console.log('[loadStats] courts:', courts);
+
+      document.getElementById('statTotal').textContent      = reservations.length;
+      document.getElementById('statActivas').textContent    = reservations.filter(r => r.estado === 'ACTIVA').length;
+      document.getElementById('statPistas').textContent     = courts.length;
+      document.getElementById('statCanceladas').textContent = reservations.filter(r => r.estado === 'CANCELADA').length;
+    } catch (err) {
+      console.error('[loadStats] error:', err);
+      ['statTotal', 'statActivas', 'statPistas', 'statCanceladas'].forEach(id => {
+        document.getElementById(id).textContent = '–';
+      });
+    }
   }
   loadStats();
 
-  function loadCourts() {
+  async function loadCourts() {
     const grid = document.getElementById('courtsGrid');
-    grid.innerHTML = `
-      <div class="col-sm-6 col-lg-4">
-        <div class="card court-card" onclick="goReserveCourt(1, 'Pista Central')">
-          <div class="court-img">🏓</div>
-          <div class="card-body">
-            <h5 class="card-title fw-bold mb-1">Pista Central</h5>
-            <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>Pabellon A</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-semibold text-success">18 EUR/h</span>
-              <span class="badge bg-success">Demo</span>
+    grid.innerHTML = '<div class="loading-spinner col-12"><div class="spinner-border text-success me-2"></div> Cargando pistas...</div>';
+    try {
+      const resp = await fetch(AppApi.config.baseUrl + '/courts?active=true', { credentials: 'include' });
+      if (!resp.ok) throw new Error(resp.status);
+      const courts = await resp.json();
+
+      if (!courts.length) {
+        grid.innerHTML = '<div class="col-12"><div class="alert alert-secondary">No hay pistas disponibles.</div></div>';
+        return;
+      }
+
+      grid.innerHTML = courts.map(c => `
+        <div class="col-sm-6 col-lg-4">
+          <div class="card court-card" onclick="goReserveCourt(${c.idPista}, '${c.nombre}')">
+            <div class="court-img">🏓</div>
+            <div class="card-body">
+              <h5 class="card-title fw-bold mb-1">${c.nombre}</h5>
+              <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>${c.ubicacion}</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-success">${c.precioHora} €/h</span>
+                <span class="badge bg-success">Disponible</span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div class="col-sm-6 col-lg-4">
-        <div class="card court-card" onclick="goReserveCourt(2, 'Pista Norte')">
-          <div class="court-img">🏓</div>
-          <div class="card-body">
-            <h5 class="card-title fw-bold mb-1">Pista Norte</h5>
-            <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>Pabellon B</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-semibold text-success">16 EUR/h</span>
-              <span class="badge bg-success">Demo</span>
-            </div>
-          </div>
-        </div>
-      </div>`;
+        </div>`).join('');
+    } catch (_) {
+      grid.innerHTML = '<div class="col-12"><div class="alert alert-danger">No se pudieron cargar las pistas.</div></div>';
+    }
   }
 
-  function goReserveCourt(courtId) {
+  window.goReserveCourt = function (courtId) {
     navigateTo('disponibilidad');
     document.getElementById('availDate').value = new Date().toISOString().slice(0, 10);
     document.getElementById('availCourt').value = String(courtId);
     document.getElementById('checkAvailBtn').click();
   }
 
-  function initAvailability() {
-    const sel = document.getElementById('availCourt');
-    if (sel.options.length <= 1) {
-      sel.innerHTML += '<option value="1">Pista Central</option><option value="2">Pista Norte</option>';
-    }
+  let courtMap = {};
+
+  async function initAvailability() {
     if (!document.getElementById('availDate').value) {
       document.getElementById('availDate').value = new Date().toISOString().slice(0, 10);
     }
+    const sel = document.getElementById('availCourt');
+    if (sel.options.length > 1) return;
+    try {
+      const resp = await fetch(AppApi.config.baseUrl + '/courts?active=true', { credentials: 'include' });
+      if (!resp.ok) throw new Error(resp.status);
+      const courts = await resp.json();
+      courtMap = {};
+      courts.forEach(c => {
+        courtMap[c.idPista] = c.nombre;
+        sel.innerHTML += `<option value="${c.idPista}">${c.nombre}</option>`;
+      });
+    } catch (_) { }
   }
 
-  document.getElementById('checkAvailBtn').addEventListener('click', function () {
-    const date    = document.getElementById('availDate').value;
-    const result  = document.getElementById('availabilityResult');
+  function generarSlots(franjas) {
+    const slots = [];
+    franjas.forEach(f => {
+      const [ihh, imm] = f.inicio.split(':').map(Number);
+      const [fhh, fmm] = f.fin.split(':').map(Number);
+      let cur = ihh * 60 + imm;
+      const end = fhh * 60 + fmm;
+      while (cur + 60 <= end) {
+        slots.push(String(Math.floor(cur / 60)).padStart(2, '0') + ':' + String(cur % 60).padStart(2, '0'));
+        cur += 60;
+      }
+    });
+    return slots;
+  }
+
+  document.getElementById('checkAvailBtn').addEventListener('click', async function () {
+    const date     = document.getElementById('availDate').value;
+    const courtId  = document.getElementById('availCourt').value;
+    const result   = document.getElementById('availabilityResult');
 
     if (!date) {
       result.innerHTML = '<div class="alert alert-warning">Selecciona una fecha.</div>';
       return;
     }
 
-    result.innerHTML = `
-      <div class="card mb-3">
-        <div class="card-header bg-white"><strong><i class="bi bi-geo me-2 text-success"></i>Pista Central</strong></div>
-        <div class="card-body">
-          <p class="text-muted small mb-2">Modo demo visual: horarios de ejemplo</p>
-          <div class="slot-grid">
-            <div class="slot slot-available" onclick="openCreateReservation(1, 'Pista Central', '${date}', '18:00')"><i class="bi bi-clock me-1"></i>18:00</div>
-            <div class="slot slot-available" onclick="openCreateReservation(1, 'Pista Central', '${date}', '19:00')"><i class="bi bi-clock me-1"></i>19:00</div>
-          </div>
-        </div>
-      </div>`;
+    result.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-success me-2"></div> Consultando disponibilidad...</div>';
+
+    try {
+      const url = AppApi.config.baseUrl + '/availability?date=' + date + (courtId ? '&courtId=' + courtId : '');
+      const resp = await fetch(url, { credentials: 'include' });
+      if (!resp.ok) throw new Error(resp.status);
+      const disponibilidades = await resp.json();
+
+      if (!disponibilidades.length) {
+        result.innerHTML = '<div class="alert alert-secondary">No hay pistas disponibles para esta fecha.</div>';
+        return;
+      }
+
+      const esHoy = date === new Date().toISOString().slice(0, 10);
+      const ahoraMin = new Date().getHours() * 60 + new Date().getMinutes();
+
+      result.innerHTML = disponibilidades.map(d => {
+        const nombre = courtMap[d.idPista] || 'Pista ' + d.idPista;
+        const slots  = generarSlots(d.franjasDisponibles).filter(s => {
+          if (!esHoy) return true;
+          const [h, m] = s.split(':').map(Number);
+          return h * 60 + m > ahoraMin;
+        });
+
+        if (!slots.length) {
+          return `
+            <div class="card mb-3">
+              <div class="card-header bg-white"><strong><i class="bi bi-geo me-2 text-success"></i>${nombre}</strong></div>
+              <div class="card-body"><div class="alert alert-secondary mb-0">Sin huecos disponibles para esta fecha.</div></div>
+            </div>`;
+        }
+
+        const slotHtml = slots.map(s =>
+          `<div class="slot slot-available" onclick="openCreateReservation(${d.idPista}, '${nombre}', '${date}', '${s}')">` +
+          `<i class="bi bi-clock me-1"></i>${s}</div>`
+        ).join('');
+
+        return `
+          <div class="card mb-3">
+            <div class="card-header bg-white"><strong><i class="bi bi-geo me-2 text-success"></i>${nombre}</strong></div>
+            <div class="card-body"><div class="slot-grid">${slotHtml}</div></div>
+          </div>`;
+      }).join('');
+    } catch (_) {
+      result.innerHTML = '<div class="alert alert-danger">No se pudo consultar la disponibilidad.</div>';
+    }
   });
 
-  function openCreateReservation(courtId, courtName, date, startTime) {
+  window.openCreateReservation = function (courtId, courtName, date, startTime) {
     document.getElementById('resCourtId').value    = courtId;
     document.getElementById('resCourtName').value  = courtName;
     document.getElementById('resDate').value        = date;
@@ -485,54 +586,71 @@
     new bootstrap.Modal(document.getElementById('createReservationModal')).show();
   }
 
-  document.getElementById('confirmReservationBtn').addEventListener('click', function () {
-    showInline('createResAlert', 'Modo demo visual: reserva no conectada al backend.', 'info');
-  });
+  document.getElementById('confirmReservationBtn').addEventListener('click', async function () {
+    const courtId  = document.getElementById('resCourtId').value;
+    const date     = document.getElementById('resDate').value;
+    const time     = document.getElementById('resStartTime').value;   // HH:mm
+    const duration = document.getElementById('resDuration').value;
 
-  function loadReservations() {
-    const container = document.getElementById('reservationsTable');
-    container.innerHTML = `
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Pista</th>
-                <th>Fecha</th>
-                <th>Inicio</th>
-                <th>Fin</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="text-muted small">101</td>
-                <td><strong>Pista Central</strong></td>
-                <td>14/04/2026</td>
-                <td>18:00</td>
-                <td>19:00</td>
-                <td><span class="badge-activa">ACTIVA</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline-warning me-1" onclick="openEditReservation(101, '2026-04-14', '18:00', 60)"><i class="bi bi-pencil"></i></button>
-                  <button class="btn btn-sm btn-outline-danger" onclick="cancelRes()"><i class="bi bi-x-lg"></i></button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>`;
-  }
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Confirmando...';
+
+    try {
+      const resp = await fetch(AppApi.config.baseUrl + '/reservations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          pista: { idPista: Number(courtId) },
+          fechaReserva: date,
+          horaInicio: time + ':00',
+          duracionMinutos: Number(duration)
+        })
+      });
+
+      if (resp.status === 409) {
+        showInline('createResAlert', 'Esta pista ya está ocupada en ese horario.', 'danger');
+        return;
+      }
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        showInline('createResAlert', err.detail || err.message || 'No se pudo crear la reserva.', 'danger');
+        return;
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('createReservationModal')).hide();
+      loadStats();
+      loadReservations();
+    } catch (_) {
+      showInline('createResAlert', 'Error de conexión. Inténtalo de nuevo.', 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Confirmar reserva';
+    }
+  });
 
   document.getElementById('filterResBtn').addEventListener('click', function () {
     showInline('reservationsTable', '<strong>Filtro aplicado en modo demo.</strong> Los datos son estaticos.', 'info');
     setTimeout(loadReservations, 600);
   });
 
-  function cancelRes() {
-    alert('Modo demo visual: cancelar reserva no esta conectado al backend.');
+  window.cancelRes = function (id, btn) {
+    if (AppApi.config.useMock) {
+      alert('Modo demo: cancelar reserva no está conectado al backend.');
+      return;
+    }
+    if (!confirm('¿Seguro que quieres cancelar esta reserva?')) return;
+    fetch(AppApi.config.baseUrl + '/reservations/' + id, {
+      method: 'DELETE',
+      credentials: 'include'
+    }).then(r => {
+      if (r.ok) loadReservations();
+      else alert('No se pudo cancelar la reserva.');
+    });
   }
 
-  function openEditReservation(id, date, startTime, duration) {
+  window.openEditReservation = function (id, date, startTime, duration) {
     document.getElementById('editResId').value       = id;
     document.getElementById('editResDate').value      = date;
     document.getElementById('editResTime').value      = startTime.substring(0, 5);
@@ -541,18 +659,148 @@
     new bootstrap.Modal(document.getElementById('editReservationModal')).show();
   }
 
-  document.getElementById('saveEditBtn').addEventListener('click', function () {
-    showInline('editResAlert', 'Modo demo visual: edicion no conectada al backend.', 'info');
+  document.getElementById('saveEditBtn').addEventListener('click', async function () {
+    const id       = document.getElementById('editResId').value;
+    const date     = document.getElementById('editResDate').value;
+    const time     = document.getElementById('editResTime').value;     // HH:mm
+    const duration = document.getElementById('editResDuration').value;
+
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+    try {
+      const resp = await fetch(AppApi.config.baseUrl + '/reservations/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          fechaReserva: date || null,
+          horaInicio: time ? time + ':00' : null,
+          duracionMinutos: duration ? Number(duration) : null
+        })
+      });
+
+      if (resp.status === 409) {
+        showInline('editResAlert', 'El nuevo horario ya está ocupado.', 'danger');
+        return;
+      }
+      if (resp.status === 400) {
+        const err = await resp.json().catch(() => ({}));
+        showInline('editResAlert', err.detail || err.message || 'Fecha u hora no válidas.', 'danger');
+        return;
+      }
+      if (!resp.ok) {
+        showInline('editResAlert', 'No se pudo actualizar la reserva.', 'danger');
+        return;
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('editReservationModal')).hide();
+      loadReservations();
+      loadStats();
+    } catch (_) {
+      showInline('editResAlert', 'Error de conexión. Inténtalo de nuevo.', 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-floppy me-2"></i>Guardar cambios';
+    }
   });
 
-  document.getElementById('profileForm').addEventListener('submit', function (e) {
+  document.getElementById('profileForm').addEventListener('submit', async function (e) {
     e.preventDefault();
-    showInline('profileAlert', 'Modo demo visual: cambios de perfil no persistentes.', 'info');
+    if (!currentUserId) return;
+
+    const btn = document.getElementById('saveProfileBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+    const nombre    = document.getElementById('profNombre').value.trim();
+    const apellidos = document.getElementById('profApellidos').value.trim();
+    const telefono  = document.getElementById('profTelefono').value.trim();
+
+    try {
+      const resp = await fetch(AppApi.config.baseUrl + '/users/' + currentUserId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ nombre, apellidos, telefono })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        showInline('profileAlert', err.detail || err.message || 'No se pudo guardar.', 'danger');
+        return;
+      }
+
+      const updated = await resp.json();
+      document.getElementById('navName').textContent     = updated.nombre;
+      document.getElementById('welcomeName').textContent = updated.nombre;
+      showInline('profileAlert', 'Perfil actualizado correctamente.', 'success');
+    } catch (_) {
+      showInline('profileAlert', 'Error de conexión. Inténtalo de nuevo.', 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-floppy me-2"></i>Guardar cambios';
+    }
   });
 
   loadCourts();
-  loadReservations();
-  onSectionEnter('inicio');
+  function loadReservations() {
+    const container = document.getElementById('reservationsTable');
+
+    if (AppApi.config.useMock) {
+      container.innerHTML = `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          El frontend está en <strong>modo demo</strong>. Activa el backend y pon
+          <code>useMock: false</code> en <code>api-client.js</code> para ver tus reservas reales.
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-success me-2"></div> Cargando reservas...</div>';
+
+    fetch(AppApi.config.baseUrl + '/reservations', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(reservations => {
+        if (!reservations.length) {
+          container.innerHTML = '<div class="alert alert-secondary">No tienes reservas todavía.</div>';
+          return;
+        }
+        const rows = reservations.map(r => `
+          <tr>
+            <td class="text-muted small">${r.idReserva}</td>
+            <td><strong>${r.pista?.nombre ?? r.pista?.idPista ?? '–'}</strong></td>
+            <td>${r.fechaReserva}</td>
+            <td>${r.horaInicio?.substring(0,5) ?? '–'}</td>
+            <td>${r.horaFin?.substring(0,5) ?? '–'}</td>
+            <td><span class="badge-${r.estado === 'ACTIVA' ? 'activa' : 'cancelada'}">${r.estado}</span></td>
+            <td>
+              ${r.estado === 'ACTIVA' ? `
+              <button class="btn btn-sm btn-outline-warning me-1"
+                onclick="openEditReservation(${r.idReserva}, '${r.fechaReserva}', '${r.horaInicio?.substring(0,5)}', ${r.duracionMinutos})">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger"
+                onclick="cancelRes(${r.idReserva}, this)">
+                <i class="bi bi-x-lg"></i>
+              </button>` : '–'}
+            </td>
+          </tr>`).join('');
+        container.innerHTML = `
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>#</th><th>Pista</th><th>Fecha</th><th>Inicio</th><th>Fin</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      })
+      .catch(() => {
+        container.innerHTML = '<div class="alert alert-danger">No se pudieron cargar las reservas.</div>';
+      });
+  }
+
+  })();
 </script>
 </body>
 </html>

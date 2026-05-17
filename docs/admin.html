@@ -149,8 +149,10 @@
                 </select>
               </div>
               <div class="col-md-3">
-                <label class="form-label small fw-semibold">Usuario ID</label>
-                <input type="number" class="form-control form-control-sm" id="adminResUser" placeholder="ID usuario" />
+                <label class="form-label small fw-semibold">Usuario</label>
+                <select class="form-select form-select-sm" id="adminResUser">
+                  <option value="">Todos</option>
+                </select>
               </div>
               <div class="col-md-3">
                 <button class="btn btn-primary btn-sm w-100" id="adminResFilterBtn">
@@ -240,18 +242,68 @@
   </div>
 </div>
 
+<!-- ===== MODAL: EDITAR USUARIO ===== -->
+<div class="modal fade" id="userModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Editar usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="userModalAlert"></div>
+        <form id="userForm" novalidate>
+          <input type="hidden" id="userId" />
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="userName" placeholder="Nombre" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Apellidos</label>
+            <input type="text" class="form-control" id="userApellidos" placeholder="Apellidos" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="userEmail" placeholder="correo@ejemplo.com" disabled />
+            <small class="form-text text-muted">El email no puede cambiar</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Teléfono</label>
+            <input type="tel" class="form-control" id="userTelefono" placeholder="+34 666 123 456" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Rol</label>
+            <select class="form-select" id="userRol">
+              <option value="USER">Usuario normal</option>
+              <option value="ADMIN">Administrador</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="saveUserBtn">
+          <i class="bi bi-floppy me-2"></i>Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/api-client.js"></script>
 <script>
-  const auth = AppApi.requireRole('ADMIN');
-  if (!auth.ok) {
-    window.location.href = auth.redirect;
-  }
+  const _as = AppApi.getSession();
+  if (!_as) { window.location.href = 'index.html'; }
+  if (_as && _as.rol !== 'ADMIN') { window.location.href = 'dashboard.html'; }
 
-  document.getElementById('navName').textContent = auth.user.nombre || 'Admin Demo';
+  document.getElementById('navName').textContent = _as?.nombre || 'Admin';
 
-  function showDemo(message) {
-    alert(message || 'Modo demo visual: accion sin backend.');
+  const BASE = AppApi.config.baseUrl;
+
+  function showInline(targetId, message, type) {
+    const t = document.getElementById(targetId);
+    if (t) t.innerHTML = `<div class="alert alert-${type || 'info'} py-2">${message}</div>`;
   }
 
   // ===== NAVEGACIÓN =====
@@ -264,10 +316,7 @@
   }
 
   document.querySelectorAll('[data-section]').forEach(link => {
-    link.addEventListener('click', function (e) {
-      e.preventDefault();
-      navigateTo(this.dataset.section);
-    });
+    link.addEventListener('click', function (e) { e.preventDefault(); navigateTo(this.dataset.section); });
   });
 
   function onSectionEnter(name) {
@@ -278,170 +327,393 @@
   }
 
   document.getElementById('logoutBtn').addEventListener('click', function () {
-    AppApi.logout();
-    window.location.href = 'index.html';
+    AppApi.logout().finally(() => { window.location.href = 'index.html?forceLogin=1'; });
   });
   document.getElementById('sidebarLogout').addEventListener('click', function (e) {
     e.preventDefault();
-    AppApi.logout();
-    window.location.href = 'index.html';
+    AppApi.logout().finally(() => { window.location.href = 'index.html?forceLogin=1'; });
   });
 
   // ===== RESUMEN =====
-  function loadResumen() {
-    document.getElementById('statTotalRes').textContent = '18';
-    document.getElementById('statActivasRes').textContent = '9';
-    document.getElementById('statTotalPistas').textContent = '6';
-    document.getElementById('statTotalUsers').textContent = '24';
-  }
-  loadResumen();
+  async function loadResumen() {
+    ['statTotalRes', 'statActivasRes', 'statTotalPistas', 'statTotalUsers'].forEach(id => {
+      document.getElementById(id).textContent = '…';
+    });
+    try {
+      const [resResp, courtsResp, usersResp] = await Promise.all([
+        fetch(BASE + '/admin/reservations', { credentials: 'include' }),
+        fetch(BASE + '/courts',             { credentials: 'include' }),
+        fetch(BASE + '/users',              { credentials: 'include' })
+      ]);
+      const reservations = resResp.ok    ? await resResp.json()    : [];
+      const courts       = courtsResp.ok ? await courtsResp.json() : [];
+      const users        = usersResp.ok  ? await usersResp.json()  : [];
 
-  // ===== RESERVAS ADMIN =====
-  function initAdminResFilter() {
-    const sel = document.getElementById('adminResCourt');
-    if (sel.options.length <= 1) {
-      sel.innerHTML += '<option value="1">Pista Central</option><option value="2">Pista Norte</option>';
+      document.getElementById('statTotalRes').textContent    = reservations.length;
+      document.getElementById('statActivasRes').textContent  = reservations.filter(r => r.estado === 'ACTIVA').length;
+      document.getElementById('statTotalPistas').textContent = courts.length;
+      document.getElementById('statTotalUsers').textContent  = users.length;
+    } catch (_) {
+      ['statTotalRes', 'statActivasRes', 'statTotalPistas', 'statTotalUsers'].forEach(id => {
+        document.getElementById(id).textContent = '–';
+      });
     }
   }
 
-  function loadAdminReservations() {
-    const container = document.getElementById('adminResTable');
-    container.innerHTML = `
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Usuario</th>
-                <th>Pista</th>
-                <th>Fecha</th>
-                <th>Inicio</th>
-                <th>Fin</th>
-                <th>Duración</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="text-muted small">501</td>
-                <td>Usuario Demo</td>
-                <td><strong>Pista Central</strong></td>
-                <td>14/04/2026</td>
-                <td>18:00</td>
-                <td>19:00</td>
-                <td>60 min</td>
-                <td><span class="badge-activa">ACTIVA</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>`;
+  // ===== RESERVAS ADMIN =====
+  let adminCourtMap = {};
+
+  async function initAdminResFilter() {
+    const courtSel = document.getElementById('adminResCourt');
+    const userSel  = document.getElementById('adminResUser');
+
+    if (courtSel.options.length <= 1) {
+      try {
+        const resp = await fetch(BASE + '/courts', { credentials: 'include' });
+        if (!resp.ok) throw new Error();
+        const courts = await resp.json();
+        adminCourtMap = {};
+        courts.forEach(c => {
+          adminCourtMap[c.idPista] = c.nombre;
+          courtSel.innerHTML += `<option value="${c.idPista}">${c.nombre}</option>`;
+        });
+      } catch (_) {}
+    }
+
+    if (userSel.options.length <= 1) {
+      try {
+        const resp = await fetch(BASE + '/users', { credentials: 'include' });
+        if (!resp.ok) throw new Error();
+        const users = await resp.json();
+        users.forEach(u => {
+          userSel.innerHTML += `<option value="${u.idUsuario}">${u.nombre} ${u.apellidos} &lt;${u.email}&gt;</option>`;
+        });
+      } catch (_) {}
+    }
   }
 
-  document.getElementById('adminResFilterBtn').addEventListener('click', function () {
-    showDemo('Modo demo visual: filtro sin backend.');
-    loadAdminReservations();
-  });
+  async function loadAdminReservations() {
+    const container = document.getElementById('adminResTable');
+    container.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-success me-2"></div> Cargando...</div>';
+
+    const date     = document.getElementById('adminResDate').value;
+    const courtId  = document.getElementById('adminResCourt').value;
+    const userId   = document.getElementById('adminResUser').value;
+
+    let url = BASE + '/admin/reservations?';
+    if (date)     url += 'date='     + date     + '&';
+    if (courtId)  url += 'courtId='  + courtId  + '&';
+    if (userId)   url += 'userId='   + userId;
+
+    try {
+      const resp = await fetch(url, { credentials: 'include' });
+      if (!resp.ok) throw new Error(resp.status);
+      const reservations = await resp.json();
+
+      if (!reservations.length) {
+        container.innerHTML = '<div class="alert alert-secondary">No hay reservas con los filtros seleccionados.</div>';
+        return;
+      }
+
+      const rows = reservations.map(r => `
+        <tr>
+          <td class="text-muted small">${r.idReserva}</td>
+          <td>${r.usuario?.nombre ?? '–'} ${r.usuario?.apellidos ?? ''}<br>
+              <small class="text-muted">${r.usuario?.email ?? ''}</small></td>
+          <td><strong>${r.pista?.nombre ?? '–'}</strong></td>
+          <td>${r.fechaReserva}</td>
+          <td>${r.horaInicio?.substring(0, 5) ?? '–'}</td>
+          <td>${r.horaFin?.substring(0, 5) ?? '–'}</td>
+          <td>${r.duracionMinutos} min</td>
+          <td><span class="badge-${r.estado === 'ACTIVA' ? 'activa' : 'cancelada'}">${r.estado}</span></td>
+          <td>
+            ${r.estado === 'ACTIVA'
+              ? `<button class="btn btn-sm btn-outline-danger" onclick="adminCancelRes(${r.idReserva})" title="Cancelar reserva">
+                   <i class="bi bi-x-circle"></i>
+                 </button>`
+              : '–'}
+          </td>
+        </tr>`).join('');
+
+      container.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th>#</th><th>Usuario</th><th>Pista</th><th>Fecha</th><th>Inicio</th><th>Fin</th><th>Duración</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    } catch (_) {
+      container.innerHTML = '<div class="alert alert-danger">No se pudieron cargar las reservas.</div>';
+    }
+  }
+
+  document.getElementById('adminResFilterBtn').addEventListener('click', loadAdminReservations);
+
+  window.adminCancelRes = async function (id) {
+    if (!confirm('¿Cancelar esta reserva? El usuario será notificado en su panel.')) return;
+    try {
+      const resp = await fetch(BASE + '/reservations/' + id, { method: 'DELETE', credentials: 'include' });
+      if (!resp.ok) throw new Error();
+      loadAdminReservations();
+      loadResumen();
+    } catch (_) {
+      alert('No se pudo cancelar la reserva.');
+    }
+  };
 
   // ===== PISTAS ADMIN =====
-  function loadAdminCourts() {
+  async function loadAdminCourts() {
     const container = document.getElementById('adminCourtsTable');
-    container.innerHTML = `
+    container.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-success me-2"></div> Cargando...</div>';
+    try {
+      const resp = await fetch(BASE + '/courts', { credentials: 'include' });
+      if (!resp.ok) throw new Error();
+      const courts = await resp.json();
+
+      if (!courts.length) {
+        container.innerHTML = '<div class="alert alert-secondary">No hay pistas registradas.</div>';
+        return;
+      }
+
+      const rows = courts.map(c => {
+        const nom = c.nombre.replace(/'/g, "\\'");
+        const ubi = c.ubicacion.replace(/'/g, "\\'");
+        return `
+          <tr>
+            <td class="text-muted small">${c.idPista}</td>
+            <td><strong>${c.nombre}</strong></td>
+            <td>${c.ubicacion}</td>
+            <td>${c.precioHora} €/h</td>
+            <td><span class="badge ${c.activa ? 'bg-success' : 'bg-secondary'}">${c.activa ? 'Activa' : 'Inactiva'}</span></td>
+            <td>
+              <button class="btn btn-sm btn-outline-warning me-1"
+                onclick="openEditCourtModal(${c.idPista},'${nom}','${ubi}',${c.precioHora},${c.activa})">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger"
+                onclick="deleteCourt(${c.idPista},'${nom}')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>`;
+      }).join('');
+
+      container.innerHTML = `
         <div class="table-responsive">
           <table class="table table-hover align-middle">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>Ubicación</th>
-                <th>Precio/h</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="text-muted small">1</td>
-                <td><strong>Pista Central</strong></td>
-                <td>Pabellon A</td>
-                <td>18 EUR</td>
-                <td><span class="badge bg-success">Activa</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline-warning me-1" onclick="openEditCourtModal(1, 'Pista Central', 'Pabellon A', 18, true)"><i class="bi bi-pencil"></i></button>
-                  <button class="btn btn-sm btn-outline-danger" onclick="deleteCourt()"><i class="bi bi-trash"></i></button>
-                </td>
-              </tr>
-            </tbody>
+            <thead><tr><th>#</th><th>Nombre</th><th>Ubicación</th><th>Precio/h</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>${rows}</tbody>
           </table>
         </div>`;
+    } catch (_) {
+      container.innerHTML = '<div class="alert alert-danger">No se pudieron cargar las pistas.</div>';
+    }
   }
 
-  // Crear pista
-  function openCreateCourtModal() {
+  window.openCreateCourtModal = function () {
     document.getElementById('courtModalTitle').innerHTML = '<i class="bi bi-plus-lg me-2 text-success"></i>Nueva pista';
-    document.getElementById('courtId').value      = '';
-    document.getElementById('courtNombre').value  = '';
-    document.getElementById('courtUbicacion').value = '';
-    document.getElementById('courtPrecio').value  = '';
+    document.getElementById('courtId').value             = '';
+    document.getElementById('courtNombre').value         = '';
+    document.getElementById('courtUbicacion').value      = '';
+    document.getElementById('courtPrecio').value         = '';
     document.getElementById('courtModalAlert').innerHTML = '';
     document.getElementById('courtActivaRow').style.display = 'none';
     new bootstrap.Modal(document.getElementById('courtModal')).show();
-  }
+  };
 
-  // Editar pista
-  function openEditCourtModal(id, nombre, ubicacion, precio, activa) {
+  window.openEditCourtModal = function (id, nombre, ubicacion, precio, activa) {
     document.getElementById('courtModalTitle').innerHTML = '<i class="bi bi-pencil me-2 text-warning"></i>Editar pista';
-    document.getElementById('courtId').value       = id;
-    document.getElementById('courtNombre').value   = nombre;
-    document.getElementById('courtUbicacion').value = ubicacion;
-    document.getElementById('courtPrecio').value   = precio ?? '';
-    document.getElementById('courtActiva').checked = activa;
+    document.getElementById('courtId').value             = id;
+    document.getElementById('courtNombre').value         = nombre;
+    document.getElementById('courtUbicacion').value      = ubicacion;
+    document.getElementById('courtPrecio').value         = precio ?? '';
+    document.getElementById('courtActiva').checked       = activa;
     document.getElementById('courtModalAlert').innerHTML = '';
     document.getElementById('courtActivaRow').style.display = 'block';
     new bootstrap.Modal(document.getElementById('courtModal')).show();
-  }
+  };
 
-  document.getElementById('saveCourtBtn').addEventListener('click', function () {
-    document.getElementById('courtModalAlert').innerHTML = '<div class="alert alert-info py-2">Modo demo visual: no se guardan cambios reales.</div>';
+  document.getElementById('saveCourtBtn').addEventListener('click', async function () {
+    const id       = document.getElementById('courtId').value;
+    const nombre   = document.getElementById('courtNombre').value.trim();
+    const ubicacion = document.getElementById('courtUbicacion').value.trim();
+    const precio   = document.getElementById('courtPrecio').value;
+    const activa   = document.getElementById('courtActiva').checked;
+
+    if (!nombre) { showInline('courtModalAlert', 'El nombre es obligatorio.', 'warning'); return; }
+
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+    const body = { nombre, ubicacion, precioHora: Number(precio) };
+    if (id) body.activa = activa;
+
+    try {
+      const resp = await fetch(BASE + '/courts' + (id ? '/' + id : ''), {
+        method: id ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        showInline('courtModalAlert', err.detail || err.message || 'No se pudo guardar.', 'danger');
+        return;
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('courtModal')).hide();
+      loadAdminCourts();
+      loadResumen();
+    } catch (_) {
+      showInline('courtModalAlert', 'Error de conexión.', 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-floppy me-2"></i>Guardar';
+    }
   });
 
-  function deleteCourt() {
-    showDemo('Modo demo visual: eliminar/desactivar pista sin backend.');
-  }
+  window.deleteCourt = async function (id, nombre) {
+    if (!confirm(`¿Desactivar la pista "${nombre}"?\nNo se eliminará, solo se marcará como inactiva.`)) return;
+    try {
+      const resp = await fetch(BASE + '/courts/' + id, { method: 'DELETE', credentials: 'include' });
+      if (!resp.ok) throw new Error();
+      loadAdminCourts();
+      loadResumen();
+    } catch (_) {
+      alert('No se pudo desactivar la pista.');
+    }
+  };
 
   // ===== USUARIOS ADMIN =====
-  function loadAdminUsers() {
+  async function loadAdminUsers() {
     const container = document.getElementById('adminUsersTable');
-    container.innerHTML = `
+    container.innerHTML = '<div class="loading-spinner"><div class="spinner-border text-success me-2"></div> Cargando...</div>';
+    try {
+      const resp = await fetch(BASE + '/users', { credentials: 'include' });
+      if (!resp.ok) throw new Error(resp.status);
+      const users = await resp.json();
+
+      if (!users.length) {
+        container.innerHTML = '<div class="alert alert-secondary">No hay usuarios registrados.</div>';
+        return;
+      }
+
+      const myId = AppApi.getSession()?.id;
+      const rows = users.map(u => `
+        <tr>
+          <td class="text-muted small">${u.idUsuario}</td>
+          <td><strong>${u.nombre} ${u.apellidos}</strong></td>
+          <td>${u.email}</td>
+          <td>${u.telefono || '–'}</td>
+          <td><span class="badge ${u.rol === 'ADMIN' ? 'bg-danger' : 'bg-primary'}">${u.rol}</span></td>
+          <td class="small text-muted">${u.fechaRegistro?.substring(0, 10) ?? '–'}</td>
+          <td><span class="badge ${u.activo ? 'bg-success' : 'bg-secondary'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
+          <td>
+            <div class="btn-group btn-group-sm" role="group">
+              ${u.idUsuario !== myId
+                ? `<button class="btn btn-outline-primary" onclick="openEditUserModal(${u.idUsuario})"
+                     title="Editar datos del usuario">
+                     <i class="bi bi-pencil-square"></i>
+                   </button>
+                   <button class="btn btn-outline-secondary"
+                     onclick="toggleUserRole(${u.idUsuario},'${u.rol}')"
+                     title="Cambiar a ${u.rol === 'ADMIN' ? 'USER' : 'ADMIN'}">
+                     <i class="bi bi-arrow-repeat"></i>
+                   </button>`
+                : '<span class="text-muted small">(tú)</span>'}
+            </div>
+          </td>
+        </tr>`).join('');
+
+      container.innerHTML = `
         <div class="table-responsive">
           <table class="table table-hover align-middle">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Teléfono</th>
-                <th>Rol</th>
-                <th>Fecha registro</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="text-muted small">10</td>
-                <td><strong>Usuario Demo</strong></td>
-                <td>demo@padel.local</td>
-                <td>600 000 000</td>
-                <td><span class="badge bg-primary">USER</span></td>
-                <td class="small text-muted">14/04/2026</td>
-                <td><span class="badge bg-success">Activo</span></td>
-              </tr>
-            </tbody>
+            <thead><tr><th>#</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Fecha registro</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>${rows}</tbody>
           </table>
         </div>`;
+    } catch (_) {
+      container.innerHTML = '<div class="alert alert-danger">No se pudieron cargar los usuarios.</div>';
+    }
   }
+
+  window.toggleUserRole = async function (id, currentRole) {
+    const newRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
+    if (!confirm(`¿Cambiar el rol de este usuario a ${newRole}?`)) return;
+    try {
+      const resp = await fetch(BASE + '/users/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ rol: newRole })
+      });
+      if (!resp.ok) throw new Error();
+      loadAdminUsers();
+    } catch (_) {
+      alert('No se pudo cambiar el rol del usuario.');
+    }
+  };
+
+  window.openEditUserModal = async function (userId) {
+    try {
+      const resp = await fetch(BASE + '/users/' + userId, { credentials: 'include' });
+      if (!resp.ok) throw new Error();
+      const user = await resp.json();
+
+      document.getElementById('userId').value = user.idUsuario;
+      document.getElementById('userName').value = user.nombre || '';
+      document.getElementById('userApellidos').value = user.apellidos || '';
+      document.getElementById('userEmail').value = user.email || '';
+      document.getElementById('userTelefono').value = user.telefono || '';
+      document.getElementById('userRol').value = user.rol || 'USER';
+
+      const modal = new bootstrap.Modal(document.getElementById('userModal'));
+      modal.show();
+    } catch (_) {
+      alert('No se pudieron cargar los datos del usuario.');
+    }
+  };
+
+  window.saveUserEdits = async function () {
+    const userId = document.getElementById('userId').value;
+    const payload = {
+      nombre: document.getElementById('userName').value,
+      apellidos: document.getElementById('userApellidos').value,
+      telefono: document.getElementById('userTelefono').value,
+      rol: document.getElementById('userRol').value
+    };
+
+    if (!payload.nombre || !payload.apellidos) {
+      alert('El nombre y los apellidos son obligatorios.');
+      return;
+    }
+
+    try {
+      const resp = await fetch(BASE + '/users/' + userId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) throw new Error();
+
+      const modal = bootstrap.Modal.getInstance(document.getElementById('userModal'));
+      if (modal) modal.hide();
+
+      loadAdminUsers();
+      alert('Usuario actualizado correctamente.');
+    } catch (_) {
+      alert('No se pudieron guardar los cambios del usuario.');
+    }
+  };
 
   // Carga sección inicial
   onSectionEnter('resumen');
+
+  // Event listener para el botón guardar usuario
+  document.getElementById('saveUserBtn').addEventListener('click', saveUserEdits);
 </script>
 </body>
 </html>

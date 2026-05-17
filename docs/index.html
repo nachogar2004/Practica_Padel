@@ -48,14 +48,7 @@
         <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión
       </button>
 
-      <div class="d-grid gap-2 mt-3">
-        <button type="button" class="btn btn-outline-primary" id="demoUserBtn">
-          Entrar como usuario demo
-        </button>
-        <button type="button" class="btn btn-outline-dark" id="demoAdminBtn">
-          Entrar como admin demo
-        </button>
-      </div>
+      <!-- Demo buttons removed -->
     </form>
 
     <hr class="my-3" />
@@ -88,24 +81,22 @@
   });
 
   const params = new URLSearchParams(window.location.search);
-  const session = AppApi.getSession();
-  if (session) {
-    window.location.href = session.rol === 'ADMIN' ? 'admin.html' : 'dashboard.html';
+  const forceLogin = params.get('forceLogin') === '1';
+
+  if (forceLogin) {
+    AppApi.logout().finally(() => {
+      showStaticAlert('Sesion cerrada. Inicia sesion con la cuenta correcta.', 'info');
+    });
+  } else {
+    const session = AppApi.getSession();
+    if (session) {
+      window.location.href = session.rol === 'ADMIN' ? 'admin.html' : 'dashboard.html';
+    }
   }
 
   if (params.get('registered') === '1') {
-    showStaticAlert('Cuenta creada en modo demo. Ya puedes iniciar sesion.', 'success');
+    showStaticAlert('Cuenta creada. Ya puedes iniciar sesión.', 'success');
   }
-
-  document.getElementById('demoUserBtn').addEventListener('click', async function () {
-    await AppApi.login('demo@padel.local', 'demo123');
-    window.location.href = 'dashboard.html';
-  });
-
-  document.getElementById('demoAdminBtn').addEventListener('click', async function () {
-    await AppApi.login('admin@padel.local', 'admin123');
-    window.location.href = 'admin.html';
-  });
 
   // Submit login
   document.getElementById('loginForm').addEventListener('submit', async function (e) {

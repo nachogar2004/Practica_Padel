@@ -16,21 +16,47 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Servicio que calcula la disponibilidad horaria de las pistas de pádel.
+ *
+ * <p>Obtiene las reservas activas de la BD y delega el cálculo de franjas libres
+ * al método {@link ModeloDisponibilidad#calcular} (lógica de intervalos).</p>
+ *
+ * <h3>Constantes de horario del club</h3>
+ * <ul>
+ *   <li>{@code HORA_APERTURA = 09:00} — inicio del horario disponible.</li>
+ *   <li>{@code HORA_CIERRE = 22:00} — fin del horario disponible.</li>
+ * </ul>
+ *
+ * <p>Estos valores son constantes de clase ({@code static final}) porque son
+ * configuración fija del sistema; si el horario cambiase podrían moverse a
+ * {@code application.properties}.</p>
+ */
 @Service
 public class ServicioDisponibilidad {
 
-    // Ajusta horario si el enunciado lo define
+    /** Hora de apertura del club. Ninguna reserva puede empezar antes. */
     private static final LocalTime HORA_APERTURA = LocalTime.of(9, 0);
+    /** Hora de cierre del club. Ninguna reserva puede terminar después. */
     private static final LocalTime HORA_CIERRE   = LocalTime.of(22, 0);
 
     private final RepositorioPista repositorioPista;
     private final RepositorioReserva repositorioReserva;
 
+    /** Inyección de dependencias por constructor. */
     public ServicioDisponibilidad(RepositorioPista repositorioPista, RepositorioReserva repositorioReserva) {
         this.repositorioPista = repositorioPista;
         this.repositorioReserva = repositorioReserva;
     }
 
+    /**
+     * Calcula la disponibilidad de una pista concreta en un día.
+     * Usado por: {@code GET /pistaPadel/courts/{courtId}/availability?date=...}
+     *
+     * @param courtId id de la pista
+     * @param date    día a consultar
+     * @return objeto con las franjas horarias libres
+     */
     // GET /courts/{courtId}/availability?date=...
     public ModeloDisponibilidad disponibilidadDePista(Long courtId, LocalDate date) {
         if (courtId == null || date == null) {
@@ -50,6 +76,15 @@ public class ServicioDisponibilidad {
         return disp;
     }
 
+    /**
+     * Calcula la disponibilidad de todas las pistas (o una sola si se filtra por {@code courtIdOpcional})
+     * en un día concreto.
+     * Usado por: {@code GET /pistaPadel/availability?date=...&courtId=...}
+     *
+     * @param date             día a consultar
+     * @param courtIdOpcional  si no es {@code null}, limita el resultado a esa pista
+     * @return lista de disponibilidades, una por pista
+     */
     // GET /availability?date=...&courtId=... (courtId opcional)
     public List<ModeloDisponibilidad> disponibilidadGeneral(LocalDate date, Long courtIdOpcional) {
         if (date == null) {
