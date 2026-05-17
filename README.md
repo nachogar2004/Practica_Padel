@@ -13,7 +13,7 @@
 Para comprobar las funcionalidades de usuario y administrador, podéis usar estas cuentas de prueba:
 
 - Usuario: `usuario@demo` | Contraseña: `usuario123!`
-- Administrador: `admin@pdemo` | Contraseña: `admin123!`
+- Administrador: `admin@demo` | Contraseña: `admin123!`
 
 Pagina web: http://localhost:8080/index.html
 
