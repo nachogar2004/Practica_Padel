@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Pre-test: stop Java blockers",
+      "type": "shell",
+      "command": "powershell",
+      "args": ["-ExecutionPolicy","Bypass","-File","${workspaceFolder}\\scripts\\pre-test-cleanup.ps1"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Maven: clean test",
+      "type": "shell",
+      "command": "${workspaceFolder}\\mvnw.cmd",
+      "args": ["clean","test"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": ["$maven"],
+      "dependsOn": ["Pre-test: stop Java blockers"]
+    }
+  ]
+}
