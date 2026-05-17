@@ -4,8 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### H2 Database files ###
-dbdata/
+
 
 ### STS ###
 .apt_generated
